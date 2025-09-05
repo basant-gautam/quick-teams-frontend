@@ -1,0 +1,438 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #121212;
+  color: #e0e0e0;
+  transition: all 0.3s ease;
+  background-image: linear-gradient(to bottom right, #121212, #1a1a1a, #121212);
+}
+.container {
+  text-align: center;
+  background: rgba(30, 30, 30, 0.9);
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  width: 90%;
+  max-width: 400px;
+  border: 1px solid #333;
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.8s ease-out;
+}
+h1 {
+  color: #8c7dff;
+  font-size: 2.8rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  animation: slideDown 0.8s ease-out;
+  background: linear-gradient(to right, #8c7dff, #6b5ce7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  margin-bottom: 1rem;
+  color: #8c7dff;
+  font-weight: 500;
+  animation: slideDown 0.8s ease-out;
+}
+.tagline {
+  margin: 1rem 0 2rem;
+  color: #aaa;
+  font-size: 1.1rem;
+  opacity: 0;
+  animation: fadeIn 0.8s ease-out forwards;
+  animation-delay: 0.3s;
+}
+.buttons {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  align-items: center;
+}
+.btn {
+  display: inline-block;
+  padding: 0.85rem 2rem;
+  width: 80%;
+  border: none;
+  border-radius: 8px;
+  background: #8c7dff;
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  font-size: 1.05rem;
+  box-shadow: 0 4px 15px rgba(140, 125, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  animation: slideUp 0.5s ease-out forwards;
+  animation-delay: 0.5s;
+}
+.btn:hover {
+  background: #6b5ce7;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(140, 125, 255, 0.4);
+}
+.btn.secondary {
+  background: #2c2c2c;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  border: 1px solid #444;
+  animation-delay: 0.7s;
+}
+
+/* Custom styling for the logout button */
+.logout-btn {
+  background: linear-gradient(90deg, #c3a3ff 0%, #e0c3fc 100%); /* Light purple gradient */
+  color: #6a1b9a; /* Darker text for contrast */
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px; /* Rounded button */
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(140, 125, 255, 0.3);
+}
+
+.logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(140, 125, 255, 0.4);
+  background: linear-gradient(90deg, #d4b5ff 0%, #e9d3ff 100%); /* Slightly lighter on hover */
+}
+.btn i {
+  margin-right: 8px;
+}
+.btn:before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  top: -100%;
+  left: 0;
+  transition: all 0.3s ease;
+}
+.btn:hover:before {
+  top: 0;
+}
+input, select, textarea {
+  width: 100%;
+  padding: 0.85rem;
+  margin: 0.75rem 0;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #252525;
+  color: #e0e0e0;
+  transition: all 0.3s ease;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #8c7dff;
+  box-shadow: 0 0 0 2px rgba(140, 125, 255, 0.2);
+}
+textarea {
+  resize: vertical;
+}
+.card-container {
+  margin-top: 2rem;
+}
+.card {
+  background: #252525;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin: 1.25rem 0;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  text-align: left;
+  border: 1px solid #333;
+  transition: transform 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-5px);
+}
+.card h3 {
+  margin: 0 0 0.75rem 0;
+  color: #8c7dff;
+}
+.forgot {
+  display: block;
+  margin: 0.75rem 0;
+  color: #8c7dff;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.forgot:hover {
+  text-decoration: underline;
+}
+
+.form-links {
+  margin: 0.75rem 0;
+  text-align: center;
+}
+
+.form-links a {
+  color: #8c7dff;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.form-links a:hover {
+  text-decoration: underline;
+  color: #6b5ce7;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark mode glow effect */
+.container::after {
+  content: '';
+  position: absolute;
+  top: -50px;
+  left: -50px;
+  right: -50px;
+  bottom: -50px;
+  z-index: -1;
+  background: radial-gradient(circle at center, rgba(140, 125, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+/* Dashboard styles */
+.container {
+  max-width: 900px;
+  padding: 2rem;
+}
+
+/* Search container */
+.search-container {
+  background: rgba(40, 40, 40, 0.8);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: left;
+  border: 1px solid #333;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.search-container h3 {
+  margin-top: 0;
+  color: #8c7dff;
+  font-size: 1.4rem;
+}
+
+.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #bbb;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #222;
+  color: #e0e0e0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #8c7dff;
+  box-shadow: 0 0 0 2px rgba(140, 125, 255, 0.3);
+}
+
+/* Search results */
+.search-results {
+  animation: slideUp 0.5s ease-out;
+}
+
+.search-results h3 {
+  text-align: left;
+  color: #8c7dff;
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
+}
+
+.card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background: rgba(40, 40, 40, 0.8);
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: left;
+  border: 1px solid #333;
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto 1rem;
+  border: 2px solid #8c7dff;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Ensure all images in the dashboard are consistently sized */
+.dashboard-container img, 
+.search-results img, 
+.card img {
+  max-width: 100px;
+  max-height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Style for main content images (like the large image in your screenshot) */
+.main-content img {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: contain;
+}
+
+.card h3 {
+  margin-top: 0;
+  color: #8c7dff;
+  font-size: 1.2rem;
+}
+
+.card p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.card .bio {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-style: italic;
+  color: #aaa;
+}
+
+.connect-btn {
+  margin-top: 1rem;
+  width: 100%;
+  background: linear-gradient(to right, #8c7dff, #6b5ce7);
+}
+
+/* Pagination */
+.pagination {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.pagination-controls {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.pagination-btn {
+  padding: 0.5rem 1rem;
+  background: #222;
+  border: 1px solid #444;
+  color: #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover {
+  background: #333;
+}
+
+.pagination-btn.active {
+  background: #8c7dff;
+  color: #fff;
+  border-color: #8c7dff;
+}
+
+/* Loading and error states */
+.loading, .error, .no-results {
+  padding: 2rem;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.error {
+  color: #ff6b6b;
+}
+
+#profile {
+  background: rgba(40, 40, 40, 0.8);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: left;
+  border: 1px solid #333;
+  animation: fadeIn 0.5s ease-out;
+}

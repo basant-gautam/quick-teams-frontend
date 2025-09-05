@@ -1,0 +1,36 @@
+/* Additional styles to ensure consistent image sizing on dashboard */
+
+/* Target all images on the dashboard page */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Profile and team member avatars */
+.avatar img, 
+.profile-img, 
+.team-member-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #8c7dff;
+}
+
+/* For larger decorative images */
+.decorative-img {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 10px;
+  object-fit: contain;
+  margin: 0 auto;
+  display: block;
+}
+
+/* For the specific large ram logo image */
+.card-container img:not(.team-member-img):not(.avatar img) {
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+}
