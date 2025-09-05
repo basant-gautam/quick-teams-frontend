@@ -11,10 +11,12 @@ process.on('uncaughtException', (error) => {
   // Don't exit the process, just log it
 });
 
+
 process.on('unhandledRejection', (reason, promise) => {
   console.error('UNHANDLED REJECTION:', reason);
   // Don't exit the process, just log it
 });
+
 
 const app = express();
 
@@ -24,42 +26,12 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '/')));
 
-// Define Mongoose Schemas and Models
-const userSchema = new mongoose.Schema({
-  fullName: { type: String, required: true },
-  email: { type: String, required: true, unique: true, lowercase: true },
-  password: { type: String, required: true },
-  skills: { type: [String], default: [] },
-  bio: { type: String, default: "" },
-  availability: { type: String, default: "Not specified" },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date }
-});
+// Mongoose Schemas
+let User, Session, Teammate;
 
-const sessionSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  token: { type: String, required: true, unique: true },
-  createdAt: { type: Date, default: Date.now },
-  expiresAt: { type: Date, required: true }
-});
-
-const teammateSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  skills: { type: [String], default: [] },
-  availability: { type: String, default: "Not specified" },
-  bio: { type: String, default: "" },
-  avatar: { type: String, default: "https://randomuser.me/api/portraits/lego/1.jpg" }
-});
-
-const User = mongoose.model('User', userSchema);
-const Session = mongoose.model('Session', sessionSchema);
-const Teammate = mongoose.model('Teammate', teammateSchema);
-
-// Sessions storage for compatibility during transition
-let sessions = {};
-
-// In-memory data for fallback mode
+// In-memory data (used as fallback)
 let users = [];
+let sessions = {};
 let inMemoryTeammates = [
   { 
     id: 1, 
@@ -103,66 +75,8 @@ let inMemoryTeammates = [
   }
 ];
 
-// Initialize database with sample data
-const initDatabase = async () => {
-  try {
-    // Only seed if the collection is empty
-    const teammatesCount = await Teammate.countDocuments();
-    
-    if (teammatesCount === 0) {
-      console.log('🌱 Seeding database with sample data...');
-      
-      // Sample teammates data
-      const sampleTeammates = [
-        { 
-          name: "Alice Johnson", 
-          skills: ["Python", "Machine Learning", "Data Science"], 
-          availability: "Now",
-          bio: "AI researcher with 5 years of experience",
-          avatar: "https://randomuser.me/api/portraits/women/1.jpg"
-        },
-        { 
-          name: "Bob Smith", 
-          skills: ["JavaScript", "React", "UI/UX Design"], 
-          availability: "Later Today",
-          bio: "Frontend developer passionate about creating beautiful interfaces",
-          avatar: "https://randomuser.me/api/portraits/men/2.jpg" 
-        },
-        { 
-          name: "Charlie Davis", 
-          skills: ["AI", "Design", "Project Management"], 
-          availability: "This Weekend",
-          bio: "Product designer with AI expertise",
-          avatar: "https://randomuser.me/api/portraits/men/3.jpg"
-        },
-        { 
-          name: "Diana Miller", 
-          skills: ["Node.js", "MongoDB", "AWS"], 
-          availability: "Next Week",
-          bio: "Backend developer specialized in cloud architecture",
-          avatar: "https://randomuser.me/api/portraits/women/4.jpg"
-        },
-        { 
-          name: "Ethan Wilson", 
-          skills: ["Mobile Dev", "Flutter", "Firebase"], 
-          availability: "Now",
-          bio: "Mobile app developer who loves creating cross-platform solutions",
-          avatar: "https://randomuser.me/api/portraits/men/5.jpg"
-        }
-      ];
-      
-      try {
-        await Teammate.insertMany(sampleTeammates);
-        console.log('✅ Sample data seeded successfully!');
-      } catch (insertError) {
-        console.error('Error inserting sample data:', insertError);
-      }
-    }
-  } catch (error) {
-    console.error('Error seeding database:', error);
-    // Don't throw error, just log it
-  }
-};
+// Flag to track if MongoDB is available
+let isMongoDBAvailable = false;
 
 // Helper functions
 const generateSessionId = () => {
@@ -210,41 +124,50 @@ app.post("/api/signup", async (req, res) => {
       });
     }
     
-    // Check if MongoDB is available
-    if (mongoose.connection.readyState === 1) {
-      // Check if user already exists in MongoDB
-      const existingUser = await User.findOne({ email: email.toLowerCase() });
-      if (existingUser) {
-        return res.status(409).json({ 
-          success: false,
-          message: "User with this email already exists" 
+    if (isMongoDBAvailable) {
+      try {
+        // Check if user already exists in MongoDB
+        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        if (existingUser) {
+          return res.status(409).json({ 
+            success: false,
+            message: "User with this email already exists" 
+          });
+        }
+        
+        // Create new user in MongoDB
+        const hashedPassword = hashPassword(password);
+        const newUser = new User({ 
+          fullName, 
+          email: email.toLowerCase(), 
+          password: hashedPassword, 
+          skills: skills || [],
+          bio: bio || "",
+          availability: availability || "Not specified"
         });
+        
+        await newUser.save();
+        
+        // Return user data without password
+        const userObject = newUser.toObject();
+        const { password: _, ...userWithoutPassword } = userObject;
+        
+        res.status(201).json({ 
+          success: true,
+          message: "Signup successful", 
+          user: userWithoutPassword 
+        });
+      } catch (mongoError) {
+        console.error("MongoDB error during signup:", mongoError);
+        // Fall back to in-memory if MongoDB operation fails
+        useInMemorySignup();
       }
-      
-      // Create new user in MongoDB
-      const hashedPassword = hashPassword(password);
-      const newUser = new User({ 
-        fullName, 
-        email: email.toLowerCase(), 
-        password: hashedPassword, 
-        skills: skills || [],
-        bio: bio || "",
-        availability: availability || "Not specified"
-      });
-      
-      await newUser.save();
-      
-      // Return user data without password
-      const userObject = newUser.toObject();
-      const { password: _, ...userWithoutPassword } = userObject;
-      
-      res.status(201).json({ 
-        success: true,
-        message: "Signup successful", 
-        user: userWithoutPassword 
-      });
     } else {
-      // Fallback to in-memory storage
+      useInMemorySignup();
+    }
+    
+    // In-memory signup helper function
+    function useInMemorySignup() {
       // Check if user already exists in memory
       if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
         return res.status(409).json({ 
@@ -299,59 +222,68 @@ app.post("/api/login", async (req, res) => {
       });
     }
     
-    // Check if MongoDB is available
-    if (mongoose.connection.readyState === 1) {
-      // Find user and verify credentials in MongoDB
-      const user = await User.findOne({ 
-        email: email.toLowerCase(), 
-        password: hashPassword(password)
-      });
-      
-      if (!user) {
-        return res.status(401).json({ 
-          success: false, 
-          message: "Invalid email or password" 
-        });
-      }
-      
-      // Generate session
-      const sessionId = generateSessionId();
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-      
-      // Create and save the session in MongoDB
+    if (isMongoDBAvailable) {
       try {
-        const newSession = new Session({
-          userId: user._id,
-          token: sessionId,
-          expiresAt
+        // Find user and verify credentials in MongoDB
+        const user = await User.findOne({ 
+          email: email.toLowerCase(), 
+          password: hashPassword(password)
         });
         
-        await newSession.save();
-      } catch (sessionError) {
-        console.error("Session save error:", sessionError);
-        // Continue even if session save fails
+        if (!user) {
+          return res.status(401).json({ 
+            success: false, 
+            message: "Invalid email or password" 
+          });
+        }
+        
+        // Generate session
+        const sessionId = generateSessionId();
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        
+        // Create and save the session in MongoDB
+        try {
+          const newSession = new Session({
+            userId: user._id,
+            token: sessionId,
+            expiresAt
+          });
+          
+          await newSession.save();
+        } catch (sessionError) {
+          console.error("Session save error:", sessionError);
+          // Continue even if session save fails
+        }
+        
+        // Also maintain in-memory sessions for compatibility
+        sessions[sessionId] = {
+          userId: user._id,
+          createdAt: new Date(),
+          expiresAt
+        };
+        
+        // Return user data without password
+        const userObject = user.toObject();
+        const { password: _, ...userWithoutPassword } = userObject;
+        
+        res.json({ 
+          success: true,
+          message: "Login successful", 
+          user: userWithoutPassword,
+          token: sessionId,
+          expiresAt: expiresAt
+        });
+      } catch (mongoError) {
+        console.error("MongoDB error during login:", mongoError);
+        // Fall back to in-memory if MongoDB operation fails
+        useInMemoryLogin();
       }
-      
-      // Also maintain in-memory sessions for compatibility
-      sessions[sessionId] = {
-        userId: user._id,
-        createdAt: new Date(),
-        expiresAt
-      };
-      
-      // Return user data without password
-      const userObject = user.toObject();
-      const { password: _, ...userWithoutPassword } = userObject;
-      
-      res.json({ 
-        success: true,
-        message: "Login successful", 
-        user: userWithoutPassword,
-        token: sessionId,
-        expiresAt: expiresAt
-      });
     } else {
-      // Fallback to in-memory storage
+      useInMemoryLogin();
+    }
+    
+    // In-memory login helper function
+    function useInMemoryLogin() {
       // Find user and verify credentials
       const user = users.find(u => 
         u.email.toLowerCase() === email.toLowerCase() && 
@@ -407,8 +339,7 @@ const authenticateUser = async (req, res, next) => {
       });
     }
     
-    // Check if MongoDB is available
-    if (mongoose.connection.readyState === 1) {
+    if (isMongoDBAvailable) {
       try {
         // Check session in MongoDB
         const session = await Session.findOne({ token });
@@ -416,7 +347,7 @@ const authenticateUser = async (req, res, next) => {
         if (session) {
           // Check if session is expired
           if (new Date(session.expiresAt) < new Date()) {
-            // Clean up expired session
+            // Clean up expired sessions
             await Session.deleteOne({ token });
             
             return res.status(401).json({ 
@@ -442,12 +373,12 @@ const authenticateUser = async (req, res, next) => {
           return next();
         }
       } catch (mongoError) {
-        console.error("MongoDB session check error:", mongoError);
-        // Continue to in-memory check if MongoDB check fails
+        console.error("MongoDB error during authentication:", mongoError);
+        // Fall back to in-memory if MongoDB operation fails
       }
     }
     
-    // Fallback to in-memory session check
+    // Fall back to in-memory session check
     if (!sessions[token]) {
       return res.status(401).json({ 
         success: false,
@@ -464,22 +395,9 @@ const authenticateUser = async (req, res, next) => {
       });
     }
     
-    // Add user to request for in-memory mode
+    // Add user to request from in-memory
     const userId = sessions[token].userId;
-    // Try to find user by _id (MongoDB ObjectId) first, then by id (in-memory)
-    let user;
-    if (mongoose.connection.readyState === 1) {
-      try {
-        user = await User.findById(userId);
-      } catch (err) {
-        // Ignore error and fall back to in-memory
-      }
-    }
-    
-    if (!user) {
-      // Fallback to in-memory users
-      user = users.find(u => u.id === userId);
-    }
+    const user = users.find(u => u.id === userId);
     
     if (!user) {
       return res.status(401).json({ 
@@ -505,11 +423,10 @@ const authenticateUser = async (req, res, next) => {
 // Get user profile
 app.get("/api/profile", authenticateUser, async (req, res) => {
   try {
-    // User is already added to req by authenticateUser middleware
     let userWithoutPassword;
     
-    // Check if user is a Mongoose document
-    if (req.user.toObject) {
+    if (isMongoDBAvailable && req.user.toObject) {
+      // MongoDB user
       const userObject = req.user.toObject();
       const { password, ...userData } = userObject;
       userWithoutPassword = userData;
@@ -540,16 +457,13 @@ app.get("/api/teammates", authenticateUser, async (req, res) => {
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     
-    // Check if MongoDB is available
-    if (mongoose.connection.readyState === 1) {
+    if (isMongoDBAvailable) {
       try {
         // Build query filter
         let filter = {};
         
         if (skill) {
-          // Escape special regex characters to avoid issues with terms like "c++"
-          const escapedSkill = skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          filter.skills = { $regex: new RegExp(escapedSkill, 'i') };
+          filter.skills = { $regex: new RegExp(skill, 'i') };
         }
         
         if (availability) {
@@ -579,12 +493,13 @@ app.get("/api/teammates", authenticateUser, async (req, res) => {
           }
         });
       } catch (mongoError) {
-        console.error("MongoDB teammates error:", mongoError);
-        // Continue to in-memory if MongoDB fails
+        console.error("MongoDB error during teammates fetch:", mongoError);
+        // Fall back to in-memory if MongoDB operation fails
       }
     }
     
-    // Fallback to in-memory teammates
+    // Fallback to in-memory storage
+    // Filter teammates
     let filteredTeammates = [...inMemoryTeammates];
     
     if (skill) {
@@ -595,7 +510,7 @@ app.get("/api/teammates", authenticateUser, async (req, res) => {
     
     if (availability) {
       filteredTeammates = filteredTeammates.filter(t => 
-        t.availability.toLowerCase() === availability.toLowerCase()
+        t.availability.toLowerCase().includes(availability.toLowerCase())
       );
     }
     
@@ -629,14 +544,12 @@ app.post("/api/logout", authenticateUser, async (req, res) => {
   try {
     const token = req.token;
     
-    // Check if MongoDB is available
-    if (mongoose.connection.readyState === 1) {
+    if (isMongoDBAvailable) {
       try {
         // Remove session from MongoDB
         await Session.deleteOne({ token });
       } catch (mongoError) {
-        console.error("MongoDB session delete error:", mongoError);
-        // Continue even if MongoDB session deletion fails
+        console.error("MongoDB error during logout:", mongoError);
       }
     }
     
@@ -670,36 +583,33 @@ app.put("/api/profile", authenticateUser, async (req, res) => {
     if (skills) user.skills = skills;
     if (availability) user.availability = availability;
     
-    let userWithoutPassword;
-    
-    // Check if MongoDB is available and user is a Mongoose document
-    if (mongoose.connection.readyState === 1 && user.save) {
-      try {
-        user.updatedAt = new Date();
-        await user.save();
-        
-        // Return updated user without password
-        const userObject = user.toObject();
-        const { password, ...userData } = userObject;
-        userWithoutPassword = userData;
-      } catch (mongoError) {
-        console.error("MongoDB save error:", mongoError);
-        // Continue with in-memory if MongoDB fails
-      }
+    if (isMongoDBAvailable && user.save) {
+      // MongoDB user
+      user.updatedAt = new Date();
+      await user.save();
+      
+      // Return updated user without password
+      const userObject = user.toObject();
+      const { password, ...userWithoutPassword } = userObject;
+      
+      res.json({
+        success: true,
+        message: "Profile updated successfully",
+        user: userWithoutPassword
+      });
     } else {
       // In-memory user
       user.updatedAt = new Date().toISOString();
       
       // Return updated user without password
-      const { password, ...userData } = user;
-      userWithoutPassword = userData;
+      const { password, ...userWithoutPassword } = user;
+      
+      res.json({
+        success: true,
+        message: "Profile updated successfully",
+        user: userWithoutPassword
+      });
     }
-    
-    res.json({
-      success: true,
-      message: "Profile updated successfully",
-      user: userWithoutPassword
-    });
   } catch (error) {
     console.error("Update profile error:", error);
     res.status(500).json({
@@ -727,107 +637,6 @@ app.get('/login', (req, res) => {
 // Serve the dashboard page
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'dashboard.html'));
-});
-
-// Serve the database status page
-app.get('/db-status', (req, res) => {
-  res.sendFile(path.join(__dirname, 'db-status.html'));
-});
-
-// API endpoint to view MongoDB data (requires authentication)
-app.get('/api/db-status', authenticateUser, async (req, res) => {
-  console.log('DB status endpoint called'); // Log when this endpoint is hit
-  try {
-    // Check MongoDB connection
-    const dbStatus = {
-      mongoConnected: mongoose.connection.readyState === 1,
-      collections: {}
-    };
-    
-    // Only proceed if connected to MongoDB and we have a user
-    if (dbStatus.mongoConnected && req.user) {
-      // Get user's own data only
-      const userData = await User.findById(req.user._id).lean();
-      
-      // Remove sensitive information
-      if (userData) {
-        delete userData.password; // Remove password hash
-      }
-      
-      dbStatus.collections.currentUser = {
-        data: userData
-      };
-      
-      // Get user's active sessions
-      const userSessions = await Session.find({ userId: req.user._id }).lean();
-      dbStatus.collections.userSessions = {
-        count: userSessions.length,
-        active: userSessions.map(session => ({
-          createdAt: session.createdAt,
-          expiresAt: session.expiresAt
-        }))
-      };
-      
-      // Get teammates info (this is common data that all users can see)
-      const teammateCount = await Teammate.countDocuments();
-      const teammateSample = await Teammate.find().limit(5).lean();
-      dbStatus.collections.teammates = {
-        count: teammateCount,
-        sample: teammateSample
-      };
-    }
-    
-    res.json(dbStatus);
-  } catch (error) {
-    console.error('Error getting DB status:', error);
-    res.status(500).json({ error: 'Failed to get database status', message: error.message });
-  }
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Something went wrong on the server'
-  });
-});
-
-const PORT = process.env.PORT || 5000;
-
-// Attempt to connect to MongoDB, but continue with in-memory data if not available
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/quick-teams', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000 // 5-second timeout for server selection
-})
-.then(async () => {
-  console.log('🔌 MongoDB Connected');
-  
-  // Seed database with initial data
-  await initDatabase();
-  
-  startServer();
-})
-.catch(err => {
-  console.error('MongoDB Connection Error:', err);
-  console.log('⚠️ Continuing with in-memory data storage only');
-  
-  // Populate the in-memory users array with sample data
-  if (users.length === 0) {
-    users.push({
-      id: 1,
-      fullName: 'Test User', 
-      email: 'test@example.com', 
-      password: hashPassword('password123'), 
-      skills: ['JavaScript', 'React'],
-      bio: "Test user for development",
-      availability: "Now",
-      createdAt: new Date()
-    });
-  }
-  
-  startServer();
 });
 
 // API endpoint to view MongoDB data (for debugging)
@@ -871,10 +680,194 @@ app.get('/api/db-status', async (req, res) => {
   }
 });
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Something went wrong on the server'
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+
+// Setup MongoDB models if connected
+function setupMongoDBModels() {
+  const userSchema = new mongoose.Schema({
+    fullName: { type: String, required: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
+    password: { type: String, required: true },
+    skills: { type: [String], default: [] },
+    bio: { type: String, default: "" },
+    availability: { type: String, default: "Not specified" },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date }
+  });
+
+  const sessionSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    token: { type: String, required: true, unique: true },
+    createdAt: { type: Date, default: Date.now },
+    expiresAt: { type: Date, required: true }
+  });
+
+  const teammateSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    skills: { type: [String], default: [] },
+    availability: { type: String, default: "Not specified" },
+    bio: { type: String, default: "" },
+    avatar: { type: String, default: "https://randomuser.me/api/portraits/lego/1.jpg" }
+  });
+
+  User = mongoose.model('User', userSchema);
+  Session = mongoose.model('Session', sessionSchema);
+  Teammate = mongoose.model('Teammate', teammateSchema);
+}
+
+// Initialize database with sample data
+async function initDatabase() {
+  try {
+    // Only seed if the collection is empty
+    const teammatesCount = await Teammate.countDocuments();
+    
+    if (teammatesCount === 0) {
+      console.log('🌱 Seeding database with sample data...');
+      
+      // Sample teammates data
+      const sampleTeammates = [
+        { 
+          name: "Kushagra", 
+          skills: ["Python", "Machine Learning", "AI", "game dev","c++","java"], 
+          availability: "Now",
+          bio: "helper with 5 years of experience",
+          avatar: "https://static.vecteezy.com/system/resources/previews/008/451/344/non_2x/animal-head-goat-logo-icon-illustration-mascot-design-element-for-logo-poster-card-banner-emblem-t-shirt-illustration-vector.jpg"
+        },
+          { 
+          name: "Krishna", 
+          skills: ["Python", "Machine Learning", "AI","c++","java"], 
+          availability: "Now",
+          bio: "AI researcher with 5 years of experience",
+          avatar: "https://drive.google.com/file/d/1qL_8dtN_sMbxCfAiEP9JamhMVh6E0oNu/view?usp=sharing",
+        },
+        { 
+          name: "Alice Johnson", 
+          skills: ["Python", "Machine Learning", "Data Science"], 
+          availability: "Now",
+          bio: "AI researcher with 5 years of experience",
+          avatar: "https://randomuser.me/api/portraits/women/1.jpg"
+        },
+        { 
+          name: "Bob Smith", 
+          skills: ["JavaScript", "React", "UI/UX Design"], 
+          availability: "Later Today",
+          bio: "Frontend developer passionate about creating beautiful interfaces",
+          avatar: "https://randomuser.me/api/portraits/men/2.jpg" 
+        },
+        { 
+          name: "Charlie Davis", 
+          skills: ["AI", "Design", "Project Management"], 
+          availability: "This Weekend",
+          bio: "Product designer with AI expertise",
+          avatar: "https://randomuser.me/api/portraits/men/3.jpg"
+        },
+        { 
+          name: "Diana Miller", 
+          skills: ["Node.js", "MongoDB", "AWS"], 
+          availability: "Next Week",
+          bio: "Backend developer specialized in cloud architecture",
+          avatar: "https://randomuser.me/api/portraits/women/4.jpg"
+        },
+        { 
+          name: "Ethan Wilson", 
+          skills: ["Mobile Dev", "Flutter", "Firebase"], 
+          availability: "Now",
+          bio: "Mobile app developer who loves creating cross-platform solutions",
+          avatar: "https://randomuser.me/api/portraits/men/5.jpg"
+        }
+      ];
+      
+      try {
+        await Teammate.insertMany(sampleTeammates);
+        console.log('✅ Sample data seeded successfully!');
+      } catch (insertError) {
+        console.error('Error inserting sample data:', insertError);
+      }
+    }
+  } catch (error) {
+    console.error('Error seeding database:', error);
+    // Don't throw error, just log it
+  }
+}
+
 // Function to start the server
 function startServer() {
   app.listen(PORT, () => {
     console.log(`✅ Server running on http://localhost:${PORT}`);
     console.log(`📁 API endpoints available at http://localhost:${PORT}/api/`);
+    console.log(`💾 Using ${isMongoDBAvailable ? 'MongoDB' : 'in-memory storage'}`);
   });
+}
+
+// Attempt to connect to MongoDB, but continue with in-memory data if not available
+try {
+  mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/quick-teams', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000 // 5-second timeout for server selection
+  })
+  .then(async () => {
+    console.log('🔌 MongoDB Connected');
+    isMongoDBAvailable = true;
+    
+    // Setup MongoDB models
+    setupMongoDBModels();
+    
+    try {
+      // Seed database with initial data
+      await initDatabase();
+    } catch (initError) {
+      console.error('Error initializing database, continuing anyway:', initError);
+    }
+    
+    startServer();
+  })
+  .catch(err => {
+    console.error('MongoDB Connection Error:', err);
+    console.log('⚠️ Continuing with in-memory data storage only');
+    
+    // Populate the in-memory users array with sample data
+    if (users.length === 0) {
+      users.push({
+        id: 1,
+        fullName: 'Test User', 
+        email: 'test@example.com', 
+        password: hashPassword('password123'), 
+        skills: ['JavaScript', 'React'],
+        bio: "Test user for development",
+        availability: "Now",
+        createdAt: new Date()
+      });
+    }
+    
+    startServer();
+  });
+} catch (connectionError) {
+  console.error('Error during MongoDB connection setup:', connectionError);
+  console.log('⚠️ Continuing with in-memory data storage only');
+  
+  // Populate the in-memory users array with sample data
+  if (users.length === 0) {
+    users.push({
+      id: 1,
+      fullName: 'Test User', 
+      email: 'test@example.com', 
+      password: hashPassword('password123'), 
+      skills: ['JavaScript', 'React'],
+      bio: "Test user for development",
+      availability: "Now",
+      createdAt: new Date()
+    });
+  }
+  
+  startServer();
 }

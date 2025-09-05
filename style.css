@@ -154,6 +154,23 @@ textarea {
   text-decoration: underline;
 }
 
+.form-links {
+  margin: 0.75rem 0;
+  text-align: center;
+}
+
+.form-links a {
+  color: #8c7dff;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.form-links a:hover {
+  text-decoration: underline;
+  color: #6b5ce7;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from {
@@ -196,4 +213,189 @@ textarea {
   bottom: -50px;
   z-index: -1;
   background: radial-gradient(circle at center, rgba(140, 125, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+/* Dashboard styles */
+.container {
+  max-width: 900px;
+  padding: 2rem;
+}
+
+/* Search container */
+.search-container {
+  background: rgba(40, 40, 40, 0.8);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: left;
+  border: 1px solid #333;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.search-container h3 {
+  margin-top: 0;
+  color: #8c7dff;
+  font-size: 1.4rem;
+}
+
+.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #bbb;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #222;
+  color: #e0e0e0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #8c7dff;
+  box-shadow: 0 0 0 2px rgba(140, 125, 255, 0.3);
+}
+
+/* Search results */
+.search-results {
+  animation: slideUp 0.5s ease-out;
+}
+
+.search-results h3 {
+  text-align: left;
+  color: #8c7dff;
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
+}
+
+.card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background: rgba(40, 40, 40, 0.8);
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: left;
+  border: 1px solid #333;
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto 1rem;
+  border: 2px solid #8c7dff;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card h3 {
+  margin-top: 0;
+  color: #8c7dff;
+  font-size: 1.2rem;
+}
+
+.card p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.card .bio {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-style: italic;
+  color: #aaa;
+}
+
+.connect-btn {
+  margin-top: 1rem;
+  width: 100%;
+  background: linear-gradient(to right, #8c7dff, #6b5ce7);
+}
+
+/* Pagination */
+.pagination {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.pagination-controls {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.pagination-btn {
+  padding: 0.5rem 1rem;
+  background: #222;
+  border: 1px solid #444;
+  color: #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover {
+  background: #333;
+}
+
+.pagination-btn.active {
+  background: #8c7dff;
+  color: #fff;
+  border-color: #8c7dff;
+}
+
+/* Loading and error states */
+.loading, .error, .no-results {
+  padding: 2rem;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.error {
+  color: #ff6b6b;
+}
+
+#profile {
+  background: rgba(40, 40, 40, 0.8);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: left;
+  border: 1px solid #333;
+  animation: fadeIn 0.5s ease-out;
 }

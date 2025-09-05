@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your User Profile Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .status {
+            font-weight: bold;
+        }
+        .connected {
+            color: green;
+        }
+        .disconnected {
+            color: red;
+        }
+        .collection {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MongoDB Database Status</h1>
+        <button id="refresh">Refresh Data</button>
+        
+        <div id="connection-status"></div>
+        
+        <div id="db-content"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in by attempting to get the token from localStorage
+            const token = localStorage.getItem('authToken');
+            
+            if (!token) {
+                // Not logged in, redirect to login page
+                window.location.href = '/login?redirect=/db-status';
+                return;
+            }
+            
+            fetchDatabaseStatus();
+            
+            document.getElementById('refresh').addEventListener('click', fetchDatabaseStatus);
+        });
+        
+        async function fetchDatabaseStatus() {
+            try {
+                // Get auth token from localStorage
+                const token = localStorage.getItem('authToken');
+                
+                if (!token) {
+                    // Handle not logged in
+                    document.getElementById('db-content').innerHTML = 
+                        '<p>You need to be logged in to view your data. <a href="/login?redirect=/db-status">Login here</a>.</p>';
+                    return;
+                }
+                
+                // Make authenticated request
+                const response = await fetch('/api/db-status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                // Handle unauthorized or token expired
+                if (response.status === 401) {
+                    localStorage.removeItem('authToken');
+                    window.location.href = '/login?redirect=/db-status';
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                // Display connection status
+                const statusEl = document.getElementById('connection-status');
+                statusEl.innerHTML = `<h2>Connection Status: <span class="status ${data.mongoConnected ? 'connected' : 'disconnected'}">
+                    ${data.mongoConnected ? 'Connected' : 'Disconnected'}</span></h2>`;
+                
+                // Display collections data
+                const contentEl = document.getElementById('db-content');
+                contentEl.innerHTML = '';
+                
+                if (data.mongoConnected) {
+                    const collections = data.collections;
+                    
+                    // Show user profile information
+                    if (collections.currentUser && collections.currentUser.data) {
+                        const userDiv = document.createElement('div');
+                        userDiv.className = 'collection';
+                        
+                        let userHtml = `<h3>Your Profile</h3>`;
+                        userHtml += `<pre>${JSON.stringify(collections.currentUser.data, null, 2)}</pre>`;
+                        
+                        userDiv.innerHTML = userHtml;
+                        contentEl.appendChild(userDiv);
+                    }
+                    
+                    // Show user sessions
+                    if (collections.userSessions) {
+                        const sessionsDiv = document.createElement('div');
+                        sessionsDiv.className = 'collection';
+                        
+                        let sessionsHtml = `<h3>Your Active Sessions</h3>`;
+                        sessionsHtml += `<p>Total sessions: ${collections.userSessions.count}</p>`;
+                        
+                        if (collections.userSessions.active && collections.userSessions.active.length > 0) {
+                            sessionsHtml += `<pre>${JSON.stringify(collections.userSessions.active, null, 2)}</pre>`;
+                        }
+                        
+                        sessionsDiv.innerHTML = sessionsHtml;
+                        contentEl.appendChild(sessionsDiv);
+                    }
+                    
+                    // Show teammates (publicly available data)
+                    if (collections.teammates) {
+                        const teammatesDiv = document.createElement('div');
+                        teammatesDiv.className = 'collection';
+                        
+                        let teammatesHtml = `<h3>Available Teammates</h3>`;
+                        teammatesHtml += `<p>Total teammates: ${collections.teammates.count}</p>`;
+                        
+                        if (collections.teammates.sample && collections.teammates.sample.length > 0) {
+                            teammatesHtml += '<h4>Sample Teammates:</h4>';
+                            teammatesHtml += `<pre>${JSON.stringify(collections.teammates.sample, null, 2)}</pre>`;
+                        }
+                        
+                        teammatesDiv.innerHTML = teammatesHtml;
+                        contentEl.appendChild(teammatesDiv);
+                    }
+                } else {
+                    contentEl.innerHTML = '<p>No connection to MongoDB. Cannot display collection data.</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching database status:', error);
+                document.getElementById('db-content').innerHTML = 
+                    `<p>Error loading database status: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

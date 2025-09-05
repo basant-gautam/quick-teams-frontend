@@ -10,8 +10,33 @@
   <div class="container">
     <h2>Welcome to Quick Teams</h2>
     <div id="profile"></div>
-    <button id="findBtn" class="btn">Find Teammates</button>
-    <div id="teammates" class="card-container"></div>
+    
+    <div class="search-container">
+      <h3>Find Teammates</h3>
+      <div class="search-form">
+        <div class="form-group">
+          <label for="skillSearch">Search by Skills:</label>
+          <input type="text" id="skillSearch" placeholder="e.g., Web Dev, Python, Design">
+        </div>
+        <div class="form-group">
+          <label for="availabilityFilter">Filter by Availability:</label>
+          <select id="availabilityFilter">
+            <option value="">Any Availability</option>
+            <option value="Now">Now</option>
+            <option value="Later Today">Later Today</option>
+            <option value="This Weekend">This Weekend</option>
+            <option value="Next Week">Next Week</option>
+          </select>
+        </div>
+        <button id="findBtn" class="btn">Search Teammates</button>
+      </div>
+    </div>
+    
+    <div id="searchResults" class="search-results">
+      <h3>Search Results</h3>
+      <div id="teammates" class="card-container"></div>
+      <div id="pagination" class="pagination"></div>
+    </div>
   </div>
   <script src="script.js"></script>
 </body>
